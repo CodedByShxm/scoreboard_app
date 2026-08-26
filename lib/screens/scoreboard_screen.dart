@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/sport.dart';
@@ -8,333 +7,31 @@ import '../widgets/team_score_panel.dart';
 class ScoreboardScreen extends StatefulWidget {
   final SportConfig sport;
   const ScoreboardScreen({super.key, required this.sport});
-
-  @override
-  State<ScoreboardScreen> createState() => _ScoreboardScreenState();
+  @override State<ScoreboardScreen> createState() => _ScoreboardScreenState();
 }
 
 class _ScoreboardScreenState extends State<ScoreboardScreen> {
-  int _scoreA = 0;
-  int _scoreB = 0;
-  int _period = 1;
-  int _gameClockSeconds = 12 * 60;
+  int _scoreA = 0, _scoreB = 0, _period = 1;
+  int _gameClockSeconds = 720;
   bool _isClockRunning = false;
   Timer? _gameClockTimer;
-  String _teamAName = 'Home';
-  String _teamBName = 'Away';
+  String _teamAName = 'Home', _teamBName = 'Away';
   late final Map<String, int> _teamARules;
   late final Map<String, int> _teamBRules;
 
   @override
-  void initState() {
-    super.initState();
-    _gameClockSeconds = widget.sport.defaultDurationSeconds > 0
-        ? widget.sport.defaultDurationSeconds
-        : 12 * 60;
-    _teamARules = {
-      for (final rule in widget.sport.teamRules)
-        rule.label: rule.startingValue,
-    };
-    _teamBRules = {
-      for (final rule in widget.sport.teamRules)
-        rule.label: rule.startingValue,
-    };
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
+  void initState() { super.initState(); _gameClockSeconds = widget.sport.defaultDurationSeconds > 0 ? widget.sport.defaultDurationSeconds : 720; _teamARules = {for (final r in widget.sport.teamRules) r.label: r.startingValue}; _teamBRules = {for (final r in widget.sport.teamRules) r.label: r.startingValue}; SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]); }
+  String _formatClock(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+  void _toggleClock() { setState(() { _isClockRunning = !_isClockRunning; if (_isClockRunning) { _gameClockTimer?.cancel(); _gameClockTimer = Timer.periodic(const Duration(seconds: 1), (_) { if (!mounted) return; setState(() { if (_gameClockSeconds > 0) _gameClockSeconds--; else { _gameClockTimer?.cancel(); _isClockRunning = false; } }); }); } else { _gameClockTimer?.cancel(); } }); }
+  void _adjustClock(int change) { if (_isClockRunning) return; setState(() => _gameClockSeconds = (_gameClockSeconds + change).clamp(0, 3600)); }
+  Future<void> _rename(bool isA) async { final controller = TextEditingController(text: isA ? _teamAName : _teamBName); final result = await showDialog<String>(context: context, builder: (context) => AlertDialog(title: const Text('Team name'), content: TextField(controller: controller, autofocus: true), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Save'))])); if (result != null && result.isNotEmpty) setState(() { if (isA) _teamAName = result; else _teamBName = result; }); }
+  void _updateRule(bool isA, String label, int delta) => setState(() { (isA ? _teamARules : _teamBRules)[label] = ((isA ? _teamARules : _teamBRules)[label] ?? 0) + delta; });
+  void _reset() { _gameClockTimer?.cancel(); setState(() { _scoreA = 0; _scoreB = 0; _period = 1; _gameClockSeconds = widget.sport.defaultDurationSeconds > 0 ? widget.sport.defaultDurationSeconds : 720; _isClockRunning = false; for (final r in widget.sport.teamRules) { _teamARules[r.label] = r.startingValue; _teamBRules[r.label] = r.startingValue; } }); }
+  @override void dispose() { _gameClockTimer?.cancel(); SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown, DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]); super.dispose(); }
 
-  String _formatClock(int totalSeconds) {
-    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
+  Widget _background(SportConfig sport, Widget child) => Stack(fit: StackFit.expand, children: [Container(color: sport.backgroundColor), Positioned(right: -70, top: -90, child: Icon(sport.icon, size: 360, color: sport.primaryColor.withOpacity(.10))), Positioned(left: -90, bottom: -130, child: Icon(sport.icon, size: 300, color: sport.accentColor.withOpacity(.06))), child]);
+  Widget _timer() => Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.black.withOpacity(.32), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(.12))), child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: () => _adjustClock(-15), icon: const Icon(Icons.remove, size: 17), visualDensity: VisualDensity.compact), GestureDetector(onTap: _toggleClock, child: Text(_formatClock(_gameClockSeconds), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 1))), IconButton(onPressed: _toggleClock, icon: Icon(_isClockRunning ? Icons.pause : Icons.play_arrow, size: 19), visualDensity: VisualDensity.compact), IconButton(onPressed: () => _adjustClock(15), icon: const Icon(Icons.add, size: 17), visualDensity: VisualDensity.compact)]));
 
-  void _toggleClock() {
-    setState(() {
-      _isClockRunning = !_isClockRunning;
-      if (_isClockRunning) {
-        _gameClockTimer?.cancel();
-        _gameClockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-          if (!mounted) return;
-          setState(() {
-            if (_gameClockSeconds > 0) {
-              _gameClockSeconds--;
-            } else {
-              _gameClockTimer?.cancel();
-              _isClockRunning = false;
-            }
-          });
-        });
-      } else {
-        _gameClockTimer?.cancel();
-      }
-    });
-  }
-
-  void _adjustClock(int change) {
-    if (_isClockRunning) return;
-    setState(() {
-      _gameClockSeconds = (_gameClockSeconds + change).clamp(0, 60 * 60);
-    });
-  }
-
-  Future<void> _rename(bool isTeamA) async {
-    final controller =
-        TextEditingController(text: isTeamA ? _teamAName : _teamBName);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Team name'),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        if (isTeamA) {
-          _teamAName = result;
-        } else {
-          _teamBName = result;
-        }
-      });
-    }
-  }
-
-  void _reset() {
-    _gameClockTimer?.cancel();
-    setState(() {
-      _scoreA = 0;
-      _scoreB = 0;
-      _period = 1;
-      _gameClockSeconds = widget.sport.defaultDurationSeconds > 0
-          ? widget.sport.defaultDurationSeconds
-          : 12 * 60;
-      _isClockRunning = false;
-      for (final rule in widget.sport.teamRules) {
-        _teamARules[rule.label] = rule.startingValue;
-        _teamBRules[rule.label] = rule.startingValue;
-      }
-    });
-  }
-
-  void _updateRule(bool isTeamA, String label, int delta) {
-    setState(() {
-      final map = isTeamA ? _teamARules : _teamBRules;
-      map[label] = (map[label] ?? 0) + delta;
-    });
-  }
-
-  @override
-  void dispose() {
-    _gameClockTimer?.cancel();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sport = widget.sport;
-    final hasGameClock = sport.hasGameClock;
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1726),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1726),
-        elevation: 0,
-        toolbarHeight: 68,
-        title: Row(
-          children: [
-            Icon(sport.icon, color: sport.accentColor),
-            const SizedBox(width: 8),
-            Text(sport.displayName),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reset',
-            onPressed: _reset,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            color: const Color(0xFF162337),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: sport.primaryColor.withOpacity(0.16),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      color: Colors.white70),
-                  onPressed: () => setState(() {
-                    if (_period > 1) _period--;
-                  }),
-                ),
-                Text(
-                  '${sport.periodLabel} $_period of ${sport.totalPeriods}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline,
-                      color: Colors.white70),
-                  onPressed: () => setState(() {
-                    if (_period < sport.totalPeriods) _period++;
-                  }),
-                ),
-              ],
-            ),
-                ),
-              ),
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 760;
-                final timerWidth = isCompact ? 120.0 : 180.0;
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: TeamScorePanel(
-                        teamName: _teamAName,
-                        score: _scoreA,
-                        color: sport.primaryColor,
-                        quickIncrements: sport.quickIncrements,
-                        rules: sport.teamRules
-                            .map((rule) => TeamRuleValue(
-                                  label: rule.label,
-                                  value: _teamARules[rule.label] ?? rule.startingValue,
-                                ))
-                            .toList(),
-                        onTapIncrement: () =>
-                            setState(() => _scoreA += sport.quickIncrements.first),
-                        onDecrement: () => setState(() {
-                          if (_scoreA > 0) _scoreA -= sport.quickIncrements.first;
-                        }),
-                        onQuickIncrement: (v) => setState(() => _scoreA += v),
-                        onNameTap: () => _rename(true),
-                        onRuleIncrement: (label, delta) =>
-                            _updateRule(true, label, delta),
-                        onRuleDecrement: (label, delta) =>
-                            _updateRule(true, label, -delta),
-                      ),
-                    ),
-                    if (hasGameClock)
-                        Container(
-                        width: timerWidth,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF162337),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(.08)),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'TIME',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                letterSpacing: 2,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: _toggleClock,
-                              child: Text(
-                                _formatClock(_gameClockSeconds),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: () => _adjustClock(-15),
-                                  icon: const Icon(Icons.remove, color: Colors.white),
-                                ),
-                                IconButton(
-                                  onPressed: _toggleClock,
-                                  icon: Icon(
-                                    _isClockRunning ? Icons.pause : Icons.play_arrow,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => _adjustClock(15),
-                                  icon: const Icon(Icons.add, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    Expanded(
-                      child: TeamScorePanel(
-                        teamName: _teamBName,
-                        score: _scoreB,
-                        color: sport.accentColor,
-                        quickIncrements: sport.quickIncrements,
-                        rules: sport.teamRules
-                            .map((rule) => TeamRuleValue(
-                                  label: rule.label,
-                                  value: _teamBRules[rule.label] ?? rule.startingValue,
-                                ))
-                            .toList(),
-                        onTapIncrement: () =>
-                            setState(() => _scoreB += sport.quickIncrements.first),
-                        onDecrement: () => setState(() {
-                          if (_scoreB > 0) _scoreB -= sport.quickIncrements.first;
-                        }),
-                        onQuickIncrement: (v) => setState(() => _scoreB += v),
-                        onNameTap: () => _rename(false),
-                        onRuleIncrement: (label, delta) =>
-                            _updateRule(false, label, delta),
-                        onRuleDecrement: (label, delta) =>
-                            _updateRule(false, label, -delta),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  @override Widget build(BuildContext context) { final sport = widget.sport; final rulesA = sport.teamRules.map((r) => TeamRuleValue(label: r.label, value: _teamARules[r.label] ?? r.startingValue)).toList(); final rulesB = sport.teamRules.map((r) => TeamRuleValue(label: r.label, value: _teamBRules[r.label] ?? r.startingValue)).toList(); return Scaffold(appBar: AppBar(title: Row(children: [Icon(sport.icon, color: sport.accentColor), const SizedBox(width: 8), Text(sport.displayName)]), actions: [IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reset', onPressed: _reset)]), body: _background(sport, Column(children: [Container(padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12), decoration: BoxDecoration(color: Colors.black.withOpacity(.18)), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => setState(() { if (_period > 1) _period--; })), Text('${sport.periodLabel.toUpperCase()} $_period / ${sport.totalPeriods}', style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)), IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => setState(() { if (_period < sport.totalPeriods) _period++; }))])), Expanded(child: Stack(children: [Row(children: [_panel(_teamAName, _scoreA, sport.primaryColor, rulesA, true), _panel(_teamBName, _scoreB, sport.accentColor, rulesB, false)]), if (sport.hasGameClock) Align(alignment: Alignment.topCenter, child: _timer())]))]))); }
+  Widget _panel(String name, int score, Color color, List<TeamRuleValue> rules, bool isA) => Expanded(child: TeamScorePanel(teamName: name, score: score, color: color, quickIncrements: widget.sport.quickIncrements, rules: rules, onTapIncrement: () => setState(() { if (isA) _scoreA += widget.sport.quickIncrements.first; else _scoreB += widget.sport.quickIncrements.first; }), onDecrement: () => setState(() { if (isA && _scoreA > 0) _scoreA -= widget.sport.quickIncrements.first; else if (!isA && _scoreB > 0) _scoreB -= widget.sport.quickIncrements.first; }), onQuickIncrement: (v) => setState(() { if (isA) _scoreA += v; else _scoreB += v; }), onNameTap: () => _rename(isA), onRuleIncrement: (label, delta) => _updateRule(isA, label, delta), onRuleDecrement: (label, delta) => _updateRule(isA, label, -delta)));
 }
