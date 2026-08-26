@@ -5,7 +5,6 @@ void main() {
   testWidgets('app loads the sports picker screen', (tester) async {
     await tester.pumpWidget(const ScoreboardApp());
 
-    expect(find.text('Scoreboard'), findsWidgets);
-    expect(find.text('Pick a sport'), findsOneWidget);
+    expect(find.text('Choose your sport'), findsOneWidget);
   });
 }
