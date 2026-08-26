@@ -1,0 +1,22 @@
+name: scoreboard_app
+description: A responsive multi-sport scoreboard app with configurable team scoring, sport-specific rules, and landscape game clocks.
+repository: https://github.com/your-username/scoreboard_app
+issue_tracker: https://github.com/your-username/scoreboard_app/issues
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
