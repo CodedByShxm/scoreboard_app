@@ -16,47 +16,29 @@ class TeamScorePanel extends StatelessWidget {
   final VoidCallback onDecrement;
   final ValueChanged<int> onQuickIncrement;
   final VoidCallback onNameTap;
+  final bool controlsOnLeft;
+  final bool showTeamName;
   final void Function(String label, int delta)? onRuleIncrement;
   final void Function(String label, int delta)? onRuleDecrement;
 
-  const TeamScorePanel({super.key, required this.teamName, required this.score, required this.color, required this.quickIncrements, required this.rules, required this.onTapIncrement, required this.onDecrement, required this.onQuickIncrement, required this.onNameTap, this.onRuleIncrement, this.onRuleDecrement});
+  const TeamScorePanel({super.key, required this.teamName, required this.score, required this.color, required this.quickIncrements, required this.rules, required this.onTapIncrement, required this.onDecrement, required this.onQuickIncrement, required this.onNameTap, this.controlsOnLeft = false, this.showTeamName = true, this.onRuleIncrement, this.onRuleDecrement});
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final compact = constraints.maxWidth < 420;
+      final compact = constraints.maxWidth < 420 || constraints.maxHeight < 420;
       final scoreSize = compact ? 72.0 : 108.0;
-      return Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(.20),
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: color.withOpacity(.65), width: 1.5),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  InkWell(onTap: onNameTap, borderRadius: BorderRadius.circular(10), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(teamName.toUpperCase(), textAlign: TextAlign.center, style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: 2)), const SizedBox(width: 6), Icon(Icons.edit_outlined, size: 14, color: color.withOpacity(.75))]))),
-                  const SizedBox(height: 8),
-                  Text('$score', style: TextStyle(color: Colors.white, fontSize: scoreSize, fontWeight: FontWeight.w800, height: .95)),
-                  const SizedBox(height: 14),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    _ScoreButton(icon: Icons.remove, label: '−', color: color, onPressed: onDecrement),
-                    const SizedBox(width: 10),
-                    _ScoreButton(icon: Icons.add, label: 'ADD POINT', color: color, wide: true, onPressed: onTapIncrement),
-                  ]),
-                  if (quickIncrements.length > 1) ...[const SizedBox(height: 10), Wrap(spacing: 6, alignment: WrapAlignment.center, children: quickIncrements.skip(1).map((inc) => OutlinedButton(onPressed: () => onQuickIncrement(inc), style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: color.withOpacity(.75)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), minimumSize: Size.zero), child: Text('+$inc'))).toList())],
-                  if (rules.isNotEmpty) ...[const SizedBox(height: 16), Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: rules.map((rule) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Colors.black.withOpacity(.20), borderRadius: BorderRadius.circular(10)), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(rule.label, style: const TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w700)), const SizedBox(width: 5), InkWell(onTap: () => onRuleDecrement?.call(rule.label, 1), child: const Icon(Icons.remove, size: 13, color: Colors.white70)), Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('${rule.value}', style: const TextStyle(fontWeight: FontWeight.w800))), InkWell(onTap: () => onRuleIncrement?.call(rule.label, 1), child: const Icon(Icons.add, size: 13, color: Colors.white70))]))).toList())],
-                ]),
-              ),
-            ),
-          ),
-        ),
-      );
+      final controls = Column(mainAxisSize: MainAxisSize.min, children: [
+        _ScoreButton(icon: Icons.add, label: '+1', color: color, onPressed: onTapIncrement),
+        const SizedBox(height: 6),
+        _ScoreButton(icon: Icons.remove, label: '−1', color: color.withOpacity(.65), onPressed: onDecrement),
+        if (quickIncrements.length > 1) ...quickIncrements.skip(1).map((inc) => Padding(padding: const EdgeInsets.only(top: 6), child: _ScoreButton(icon: Icons.add, label: '+$inc', color: color.withOpacity(.8), onPressed: () => onQuickIncrement(inc)))),
+      ]);
+      final scoreContent = Column(mainAxisSize: MainAxisSize.min, children: [
+        if (showTeamName) InkWell(onTap: onNameTap, child: Padding(padding: const EdgeInsets.all(4), child: Text(teamName.toUpperCase(), overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.2)))),
+        Text('$score', style: TextStyle(color: Colors.white, fontSize: scoreSize, fontWeight: FontWeight.w800, height: .95)),
+      ]);
+      return Container(margin: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withOpacity(.20), borderRadius: BorderRadius.circular(22), border: Border.all(color: color.withOpacity(.65), width: 1.5)), child: SafeArea(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [if (controlsOnLeft) controls, if (controlsOnLeft) const SizedBox(width: 8), Flexible(child: scoreContent), if (!controlsOnLeft) const SizedBox(width: 8), if (!controlsOnLeft) controls]))));
     });
   }
 }
