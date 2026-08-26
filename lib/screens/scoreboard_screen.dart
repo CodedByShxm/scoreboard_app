@@ -151,10 +151,11 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
     final sport = widget.sport;
     final hasGameClock = sport.hasGameClock;
     return Scaffold(
-      backgroundColor: sport.backgroundColor,
+      backgroundColor: const Color(0xFF0D1726),
       appBar: AppBar(
-        backgroundColor: sport.backgroundColor,
+        backgroundColor: const Color(0xFF0D1726),
         elevation: 0,
+        toolbarHeight: 68,
         title: Row(
           children: [
             Icon(sport.icon, color: sport.accentColor),
@@ -174,8 +175,15 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            color: sport.primaryColor.withOpacity(0.3),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            color: const Color(0xFF162337),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: sport.primaryColor.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -202,6 +210,8 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                 ),
               ],
             ),
+                ),
+              ),
           ),
           Expanded(
             child: LayoutBuilder(
@@ -238,9 +248,14 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                       ),
                     ),
                     if (hasGameClock)
-                      Container(
+                        Container(
                         width: timerWidth,
-                        color: Colors.black.withOpacity(0.22),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF162337),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withOpacity(.08)),
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

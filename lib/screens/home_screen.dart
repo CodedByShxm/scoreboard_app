@@ -9,42 +9,55 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
-        title: const Text('Scoreboard'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Pick a sport',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          ...kSports.map(
-            (sport) => _SportTile(
-              icon: sport.icon,
-              color: sport.primaryColor,
-              title: sport.displayName,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => ScoreboardScreen(sport: sport)),
-              ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(.14),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.scoreboard_outlined,
+                      color: Theme.of(context).colorScheme.primary, size: 26),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('SCOREBOARD', style: TextStyle(letterSpacing: 2, fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w700)),
+                      SizedBox(height: 3),
+                      Text('Game day, simplified.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          _SportTile(
-            icon: Icons.sports_tennis,
-            color: const Color(0xFF33691E),
-            title: 'Tennis',
-            subtitle: 'Custom scoring: love, 15, 30, 40, deuce',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TennisScoreboard()),
+            const SizedBox(height: 34),
+            const Text('Choose your sport', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            const Text('Keep every score, period, and point clear at a glance.', style: TextStyle(color: Colors.white60, fontSize: 15, height: 1.45)),
+            const SizedBox(height: 24),
+            ...kSports.map((sport) => _SportTile(
+                  icon: sport.icon,
+                  color: sport.primaryColor,
+                  title: sport.displayName,
+                  subtitle: '${sport.periodLabel} · ${sport.totalPeriods} periods',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ScoreboardScreen(sport: sport))),
+                )),
+            _SportTile(
+              icon: Icons.sports_tennis,
+              color: const Color(0xFF9BBE62),
+              title: 'Tennis',
+              subtitle: 'Love, 15, 30, 40, deuce',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TennisScoreboard())),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -57,35 +70,28 @@ class _SportTile extends StatelessWidget {
   final String? subtitle;
   final VoidCallback onTap;
 
-  const _SportTile({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.onTap,
-    this.subtitle,
-  });
+  const _SportTile({required this.icon, required this.color, required this.title, required this.onTap, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF1E1E1E),
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: color,
-          child: Icon(icon, color: Colors.white),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(width: 5, height: 54, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8))),
+              const SizedBox(width: 15),
+              CircleAvatar(backgroundColor: color.withOpacity(.18), radius: 24, child: Icon(icon, color: color)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), if (subtitle != null) ...[const SizedBox(height: 4), Text(subtitle!, style: const TextStyle(color: Colors.white54, fontSize: 13))]])),
+              const Icon(Icons.arrow_forward_rounded, color: Colors.white38),
+            ],
+          ),
         ),
-        title: Text(title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600)),
-        subtitle: subtitle != null
-            ? Text(subtitle!, style: const TextStyle(color: Colors.white54))
-            : null,
-        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
       ),
     );
   }
